@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار علوم التربية - ENS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --error-color: #c0392b;
+            --bg-color: #ecf0f1;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 700px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background-color: #ddd;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background-color: var(--secondary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-section {
+            margin-bottom: 25px;
+        }
+
+        #question-text {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Tajawal', sans-serif;
+            text-align: right;
+            position: relative;
+        }
+
+        .option-btn:hover:not([disabled]) {
+            background-color: #e2e6ea;
+            border-color: var(--secondary-color);
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: var(--success-color);
+            color: var(--success-color);
+        }
+
+        .option-btn.wrong {
+            background-color: #f8d7da;
+            border-color: var(--error-color);
+            color: var(--error-color);
+        }
+
+        .controls {
+            margin-top: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #next-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: none; /* مخفي حتى يتم الجواب */
+        }
+
+        #next-btn:hover {
+            background-color: #2980b9;
+        }
+
+        #score-count {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        /* شاشة النتيجة */
+        .result-section {
+            display: none;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            background: var(--secondary-color);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px;
+            color: white;
+            font-size: 2.5rem;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .restart-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 500px) {
+            h1 { font-size: 1.4rem; }
+            #question-text { font-size: 1.1rem; }
+            .option-btn { font-size: 1rem; padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="quiz-box">
+        <h1>مجزوءة علوم التربية (ENS)</h1>
+        
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+
+        <div class="question-section">
+            <div id="question-text">جارٍ تحميل السؤال...</div>
+        </div>
+
+        <div class="options-container" id="options-container">
+            </div>
+
+        <div class="controls">
+            <span id="score-count">النتيجة: 0</span>
+            <button id="next-btn" onclick="nextQuestion()">السؤال التالي</button>
+        </div>
+    </div>
+
+    <div id="result-box" class="result-section">
+        <h2>انتهى الاختبار!</h2>
+        <div class="score-circle" id="final-score">0</div>
+        <p id="result-message"></p>
+        <button class="restart-btn" onclick="restartQuiz()">إعادة الاختبار</button>
+    </div>
+</div>
+
+<script>
+    /* قاعدة البيانات للأسئلة. 
+       تم دمج 30 سؤالاً متنوعاً (مفاهيم، تاريخ، نظام مغربي) كنموذج.
+       يمكنك إضافة المزيد بنفس الصيغة.
+    */
+    const questions = [
+        // --- المدخل المفاهيمي ---
+        {
+            question: "يُعرف 'النظر' لغةً بأنه:",
+            options: ["القواعد والمبادئ", "التأمل أثناء التفكير", "استنتاج عملي", "حفظ المعلومات"],
+            answer: 1 // الجواب هو الخيار الثاني (index 1)
+        },
+        {
+            question: "حسب تعريف 'أفلاطون'، التربية هي:",
+            options: ["إعداد للحياة", "تكيف مع البيئة", "إضفاء الجمال والكمال على الجسم والنفس", "تكوين اجتماعي"],
+            answer: 2
+        },
+        {
+            question: "العلاقة التي تربط 'المدرس' بـ 'المعرفة' في المثلث الديداكتيكي تسمى:",
+            options: ["التعاقد الديداكتيكي", "التمثل", "النقل الديداكتيكي", "القطب السيكولوجي"],
+            answer: 2
+        },
+        {
+            question: "يشير مفهوم 'البيداغوجيا' في أصله اليوناني إلى:",
+            options: ["فن التدريس", "قيادة وسياقة الطفل", "علم النفس", "فلسفة التربية"],
+            answer: 1
+        },
+        {
+            question: "النظرية التي يعتبر 'بافلوف' و'سكنر' من أعلامها هي:",
+            options: ["النظرية البنائية", "النظرية السلوكية", "النظرية الجشتالتية", "النظرية الطبيعية"],
+            answer: 1
+        },
+        {
+            question: "العلم الذي يدرس طرائق تدريس مادة معينة (مثل الرياضيات) هو:",
+            options: ["الديداكتيك العام", "البيداغوجيا", "الديداكتيك الخاص", "علم النفس التربوي"],
+            answer: 2
+        },
+        {
+            question: "من أعلام 'النظرية البنائية الاجتماعية' (Socio-constructivism):",
+            options: ["جان بياجي", "جون ديوي", "ليف فيجوتسكي", "واطسون"],
+            answer: 2
+        },
+        {
+            question: "تهتم الفلسفة بالنسبة لعلوم التربية بـ:",
+            options: ["تحديد قيم وأهداف التربية", "تفسير آليات التعلم", "دراسة الدماغ", "الإحصاء المدرسي"],
+            answer: 0
+        },
+        {
+            question: "التعاقد الديداكتيكي يربط بين:",
+            options: ["المدرس والمتعلم", "المتعلم والمعرفة", "المدرس والإدارة", "الأسرة والمدرسة"],
+            answer: 0
+        },
+        {
+            question: "النظرية التي تعتبر 'العقل صفحة بيضاء' والتجربة هي المصدر هي:",
+            options: ["المثالية", "الفطرية", "التجريبية", "التحليل النفسي"],
+            answer: 2
+        },
+
+        // --- تاريخ الفكر التربوي وفلسفته ---
+        {
+            question: "صاحب كتاب 'إميل' الذي دعا للتربية الطبيعية هو:",
+            options: ["جون لوك", "جان جاك روسو", "كانط", "أفلاطون"],
+            answer: 1
+        },
+        {
+            question: "الفيلسوف الذي استخدم منهج 'التوليد' (المايوطيو) هو:",
+            options: ["أرسطو", "سقراط", "ديوي", "هيغل"],
+            answer: 1
+        },
+        {
+            question: "يعتبر 'جون ديوي' رائد المدرسة:",
+            options: ["البراغماتية (النفعية)", "المثالية", "التقليدية", "السلوكية"],
+            answer: 0
+        },
+        {
+            question: "يرى 'ابن خلدون' أن التعليم هو:",
+            options: ["صناعة وملكة تكتسب بالتدريج", "حفظ للمتون", "موهبة فطرية فقط", "عقاب للطفل"],
+            answer: 0
+        },
+        {
+            question: "الاتجاه الذي يركز على 'تنمية العقل والروح' والقيم المطلقة هو:",
+            options: ["الاتجاه الطبيعي", "الاتجاه التجريبي", "الاتجاه المثالي", "الاتجاه الوظيفي"],
+            answer: 2
+        },
+        {
+            question: "مفهوم 'منطقة النمو القريب' (ZPD) يعود للعالم:",
+            options: ["بياجي", "فيجوتسكي", "فرويد", "بلوم"],
+            answer: 1
+        },
+        {
+            question: "طريقة 'المشروع' في التعليم هي تطبيق للفلسفة:",
+            options: ["البراغماتية", "المثالية", "السوفسطائية", "الوجودية"],
+            answer: 0
+        },
+        {
+            question: "التربية في العصور الوسطى الأوروبية تميزت بـ:",
+            options: ["التركيز على العلم التجريبي", "السيطرة الكنسية والسكولائية", "حرية الطفل", "التكنولوجيا"],
+            answer: 1
+        },
+        {
+            question: "يرى 'جون لوك' أن الطفل يولد:",
+            options: ["محملاً بأفكار فطرية", "شريراً بطبعه", "كصفحة بيضاء (Tabula Rasa)", "عالماً صغيراً"],
+            answer: 2
+        },
+        {
+            question: "الهدف من التربية عند 'المثاليين' هو:",
+            options: ["كسب المال", "التكيف البيولوجي", "الوصول للحقائق المطلقة والفضيلة", "اللعب"],
+            answer: 2
+        },
+
+        // --- النظام التربوي المغربي ومستجداته ---
+        {
+            question: "المبادئ الأربعة لإصلاح التعليم غداة الاستقلال (1956) هي:",
+            options: ["الجودة والإنصاف", "التعميم، التوحيد، المغربة، التعريب", "الرقمنة والتكوين", "الكفايات والأهداف"],
+            answer: 1
+        },
+        {
+            question: "الميثاق الوطني للتربية والتكوين صدر سنة:",
+            options: ["1990", "2000", "2015", "2019"],
+            answer: 1
+        },
+        {
+            question: "يقصد بـ 'التناوب اللغوي' في القانون الإطار:",
+            options: ["تدريس اللغات الأجنبية فقط", "تدريس بعض المضامين أو المجزوءات بلغة أجنبية", "إلغاء العربية", "الترجمة الفورية"],
+            answer: 1
+        },
+        {
+            question: "برنامج TaRL (المدارس الرائدة) يهدف إلى:",
+            options: ["معالجة التعثرات في التعلمات الأساس", "تدريس الفلسفة", "إلغاء الامتحانات", "توزيع الحواسيب"],
+            answer: 0
+        },
+        {
+            question: "في مقاربة TaRL، يتم تقسيم المتعلمين بناءً على:",
+            options: ["أعمارهم", "المستوى الدراسي (القسم)", "المستوى الفعلي للأداء (Rianiveau réel)", "الترتيب الأبجدي"],
+            answer: 2
+        },
+        {
+            question: "الرؤية الاستراتيجية 2015-2030 رفعت شعار:",
+            options: ["من أجل مدرسة النجاح", "من أجل مدرسة الإنصاف والجودة والارتقاء", "مدرسة للجميع", "التعليم أولاً"],
+            answer: 1
+        },
+        {
+            question: "القانون الإطار 51.17 جعل التعليم الأولي:",
+            options: ["اختيارياً", "ملزماً للدولة والأسر", "غير ضروري", "خاصاً بالمدن"],
+            answer: 1
+        },
+        {
+            question: "بيداغوجيا الكفايات (APC) تعتمد على:",
+            options: ["الحفظ والاستظهار", "حل الوضعيات المشكلة وإدماج الموارد", "سلطة المعلم المطلقة", "الأهداف السلوكية المجزأة"],
+            answer: 1
+        },
+        {
+            question: "المرحلة الأولى في تطبيق TaRL داخل القسم هي:",
+            options: ["شرح الدرس", "التشخيص (Raid positionnement)", "التقويم النهائي", "الحفظ"],
+            answer: 1
+        },
+        {
+            question: "مشروع 'المدارس الرائدة' يرتكز على:",
+            options: ["تحسين الجودة عبر TaRL والتدريس الفعال", "خوصصة المدارس", "تقليص عدد التلاميذ", "بناء مدارس جديدة فقط"],
+            answer: 0
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+
+    const quizBox = document.getElementById("quiz-box");
+    const resultBox = document.getElementById("result-box");
+    const questionText = document.getElementById("question-text");
+    const optionsContainer = document.getElementById("options-container");
+    const nextBtn = document.getElementById("next-btn");
+    const scoreCount = document.getElementById("score-count");
+    const progressBar = document.getElementById("progress");
+
+    // بدء الاختبار
+    function loadQuestion() {
+        const currentQ = questions[currentQuestionIndex];
+        
+        // تحديث النص
+        questionText.textContent = `${currentQuestionIndex + 1}. ${currentQ.question}`;
+        
+        // مسح الخيارات القديمة
+        optionsContainer.innerHTML = "";
+
+        // إنشاء أزرار الخيارات
+        currentQ.options.forEach((option, index) => {
+            const btn = document.createElement("button");
+            btn.className = "option-btn";
+            btn.textContent = option;
+            btn.onclick = () => checkAnswer(index, btn);
+            optionsContainer.appendChild(btn);
+        });
+
+        // تحديث شريط التقدم
+        const progressPercent = ((currentQuestionIndex) / questions.length) * 100;
+        progressBar.style.width = `${progressPercent}%`;
+
+        // إخفاء زر التالي حتى يتم الجواب
+        nextBtn.style.display = "none";
+    }
+
+    function checkAnswer(selectedIndex, selectedBtn) {
+        const currentQ = questions[currentQuestionIndex];
+        const allOptions = optionsContainer.children;
+
+        // تعطيل كل الأزرار لمنع تغيير الجواب
+        for (let btn of allOptions) {
+            btn.disabled = true;
+            // إظهار الجواب الصحيح دائماً
+            if (questions[currentQuestionIndex].options.indexOf(btn.textContent) === currentQ.answer) {
+                 btn.classList.add("correct");
+            }
+        }
+
+        // التحقق من الجواب
+        if (selectedIndex === currentQ.answer) {
+            score++;
+            scoreCount.textContent = `النتيجة: ${score}`;
+            // selectedBtn.classList.add("correct"); // تمت إضافته في الحلقة أعلاه
+        } else {
+            selectedBtn.classList.add("wrong");
+        }
+
+        // إظهار زر التالي
+        nextBtn.style.display = "block";
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+
+        if (currentQuestionIndex < questions.length) {
+            loadQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        quizBox.style.display = "none";
+        resultBox.style.display = "block";
+        
+        const finalScoreElement = document.getElementById("final-score");
+        const resultMessage = document.getElementById("result-message");
+        
+        finalScoreElement.textContent = `${score} / ${questions.length}`;
+
+        // رسالة حسب النتيجة
+        const percentage = (score / questions.length) * 100;
+        if (percentage >= 80) {
+            resultMessage.textContent = "ممتاز! لقد استوعبت المادة بشكل جيد جداً.";
+            resultMessage.style.color = "#27ae60";
+        } else if (percentage >= 50) {
+            resultMessage.textContent = "جيد، ولكن تحتاج لمراجعة بعض النقاط.";
+            resultMessage.style.color = "#f39c12";
+        } else {
+            resultMessage.textContent = "تحتاج إلى مراجعة الدروس بتركيز أكبر.";
+            resultMessage.style.color = "#c0392b";
+        }
+    }
+
+    function restartQuiz() {
+        currentQuestionIndex = 0;
+        score = 0;
+        scoreCount.textContent = "النتيجة: 0";
+        quizBox.style.display = "block";
+        resultBox.style.display = "none";
+        loadQuestion();
+    }
+
+    // تحميل السؤال الأول عند فتح الصفحة
+    loadQuestion();
+
+</script>
+
+</body>
+  </html>
+  
